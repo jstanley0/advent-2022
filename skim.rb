@@ -70,7 +70,7 @@ class Skim
 
   def self.from_concise_string(str, sep: '/')
     s = Skim.new
-    s.data = str.split("/").map(&:chars)
+    s.data = str.split(sep).map(&:chars)
     s
   end
 
