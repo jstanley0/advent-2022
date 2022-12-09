@@ -34,7 +34,7 @@ Coord = Struct.new(:x, :y)
 knots = 10.times.map { Coord.new(0, 0) }
 
 visited = Set.new
-visited << knots[9].dup
+visited << knots.last.dup
 
 ARGF.map do |line|
   dir, dist = line.split
@@ -43,31 +43,18 @@ ARGF.map do |line|
 
   dist.times do
     dx, dy = DELTAS[dir]
-    prev = knots.map(&:dup)
     knots[0].x += dx
     knots[0].y += dy
 
-    1.upto(9) do |i|
-      # hx, hy are the head (previous) coords; dx, dy are the direction they moved
-      hx = knots[i - 1].x
-      dx = hx - prev[i - 1].x
-      hy = knots[i - 1].y
-      dy = hy - prev[i - 1].y
-
-      # if the leading knot didn't move, we are done with this iteration
-      # (none of the rest of the knots will move)
-      break if dx == 0 && dy == 0
-
-      # if the leading knot is too far away, we need to move
-      if (hx - knots[i].x).abs > 1 || (hy - knots[i].y).abs > 1
-        # move one step toward the head on each axis
-        knots[i].x += hx <=> knots[i].x
-        knots[i].y += hy <=> knots[i].y
+    knots.each_cons(2) do |h, t|
+      if (h.x - t.x).abs > 1 || (h.y - t.y).abs > 1
+        t.x += h.x <=> t.x
+        t.y += h.y <=> t.y
       end
     end
 
     #visualize_places(knots)
-    visited << knots[9].dup
+    visited << knots.last.dup
   end
 end
 
