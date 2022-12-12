@@ -2,6 +2,7 @@
 # since this is a common pattern in AoC and I often screw it up
 
 require 'byebug'
+require_relative 'search'
 
 class Skim
   # yeah, this isn't very Encapsulated, but I need an escape hatch when time is of the essence
@@ -253,4 +254,64 @@ class Skim
     dup_with_data(data.map(&:reverse))
   end
 
+  SearchContext = Struct.new(:skim, :diag, :path_proc, :goal_or_proc, :est_dist_proc)
+
+  class SearchNode < Search::Node
+    attr_accessor :context, :x, :y
+
+    def initialize(context, x, y)
+      self.context = context
+      self.x = x
+      self.y = y
+    end
+
+    def enum_edges
+      c = context.skim[x, y]
+      context.skim.nabes(x, y, diag: context.diag) do |v, a, b|
+        cost = context.path_proc.call(c, v, x, y, a, b)
+        cost = 1 if cost == true
+        yield cost, SearchNode.new(context, a, b) if cost
+      end
+    end
+
+    def goal?
+      if context.goal_or_proc.respond_to?(:call)
+        context.goal_or_proc.call(context.skim[x, y], x, y)
+      else
+        context.skim[x, y] == context.goal_or_proc
+      end
+    end
+
+    def est_cost(other)
+      context.est_dist_proc.call(x, y, other.x, other.y)
+    end
+
+    def hash
+      y * context.skim.width + x
+    end
+
+    def to_s
+      "(#{x},#{y})"
+    end
+  end
+
+  # do a breadth-first search from x, y to a closest cell that satisfies a given goal
+  # diag: can move diagonally
+  # accepts block (source_char, dest_char, x0, y0, x1, y1) -> move cost (or nil if invalid)
+  # goal = character to match or (char, x, y) -> bool
+  # returns [cost, path]
+  def bfs(x, y, diag: false, goal:, &block)
+    context = SearchContext.new(self, diag, block, goal)
+    Search::bfs(SearchNode.new(context, x, y))
+  end
+
+  # find a shortest path from x0, y0 to x1, y1
+  # using the same block as above
+  # est_dist_proc (x0, y0, x1, y1) -> est distance (defaults to manhattan distance)
+  # returns [cost, path]
+  def a_star(x0, y0, x1, y1, diag: false, est_dist_proc: nil, &block)
+    est_dist_proc ||= ->(x0, y0, x1, y1) { (x1 - x0).abs + (y1 - y0).abs }
+    context = SearchContext.new(self, diag, block, nil, est_dist_proc)
+    Search::a_star(SearchNode.new(context, x0, y0), SearchNode.new(context, x1, y1))
+  end
 end
