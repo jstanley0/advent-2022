@@ -2,6 +2,7 @@
 # since this is a common pattern in AoC and I often screw it up
 
 require 'byebug'
+require 'stringio'
 require_relative 'search'
 
 class Skim
@@ -58,6 +59,7 @@ class Skim
   # like #read, but returns an array of Skims separated by blank lines
   # if count is nil, read until EOF, otherwise read that many
   def self.read_many(src = ARGF, count: nil, sep: nil, rec: true, square: false, num: false, &block)
+    src = StringIO.new(src) if src.is_a?(String)
     skims = []
     loop do
       skim = Skim.read(src, sep: sep, rec: rec, square: square, num: num, &block)
@@ -124,6 +126,21 @@ class Skim
     skim.each do |val, a, b|
       self[x + a, y + b] = val
     end
+    self
+  end
+
+  # accepts a block with |src, dst| chars and sets the destination to the return value
+  # if a target cell is out of range, dst is nil and the return value is discarded
+  def overlay(x, y, src)
+    src.each do |val, a, b|
+      if in_bounds?(x + a, y + b)
+        dst = self[x + a, y + b]
+        self[x + a, y + b] = yield(val, dst)
+      else
+        yield val, nil
+      end
+    end
+    self
   end
 
   def print(stream = $stdout)
@@ -143,6 +160,16 @@ class Skim
       n[x + border_size, y + border_size] = val
     end
     n
+  end
+
+  def insert_rows!(row_count, default = nil, pos: nil, width: self.width)
+    new_rows = row_count.times.map { [default] * width }
+    if pos
+      data[pos, 0] = new_rows
+    else
+      data.concat new_rows
+    end
+    self
   end
 
   def [](x, y)
