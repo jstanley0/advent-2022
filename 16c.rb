@@ -3,8 +3,10 @@
 # then uses a genetic algorithm to find the "best" permutation of valves
 # ... there is no terminating condition, you just stop it after it stops improving
 
+TIME_LIMIT = 26
+WORKERS = 2
+
 require_relative 'search'
-require 'byebug'
 
 Valve = Struct.new(:name, :flow, :links)
 
@@ -52,8 +54,8 @@ end
 # pp state_map
 
 def run_tour(state_map, tour)
-  locations = %w[AA AA]
-  times = [26, 26]
+  locations = ['AA'] * WORKERS
+  times = [TIME_LIMIT] * WORKERS
   pressure_released = 0
   tour = tour.dup
   until tour.empty?
