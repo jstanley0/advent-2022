@@ -61,6 +61,14 @@ end
 
 blueprints = ARGF.map { |line| Blueprint.new(*line.scan(/\d+/).map(&:to_i)) }
 
+def could_possibly_run_out_of?(blueprint, state, resource_type, time_left)
+  current_production = state.bots[resource_type]
+  max_cost = blueprint.members.map { |member| blueprint[member] if member.to_s.end_with?("_#{resource_type}") }.compact.max
+  return true unless max_cost
+  max_total_spend = (max_cost - current_production) * time_left
+  state.resources[resource_type] < max_total_spend
+end
+
 def finish_round(state, blueprint, time_left, forbidden_bots)
   state.collect_resources
   state.finish_robots
@@ -78,12 +86,7 @@ def count_geodes(state, blueprint, time_left, forbidden_bots = [])
   (RESOURCE_TYPES - forbidden_bots).each do |bot_type|
     count = afford[bot_type]
     next unless count > 0
-
-    # determine if it makes any sense to build this bot
-    # if we are already producing enough of this resource to build the most expensive bot, don't get more
-    current_production = state.bots[bot_type]
-    max_cost = blueprint.members.map { |member| blueprint[member] if member.to_s.end_with?("_#{bot_type}") }.compact.max
-    next if max_cost && current_production >= max_cost
+    next unless could_possibly_run_out_of?(blueprint, state, bot_type, time_left)
 
     new_state = state.dup
     new_state.build_robot(bot_type, blueprint)
