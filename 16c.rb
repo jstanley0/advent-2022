@@ -1,10 +1,16 @@
 # this collapses away the uninteresting valves and makes a rest-area city distance chart thing
 # and simulates a run given a permutation of valves, where the first available agent takes the next valve
 # then uses a genetic algorithm to find the "best" permutation of valves
-# ... there is no terminating condition, you just stop it after it stops improving
 
+# puzzle parameters
 TIME_LIMIT = 26
 WORKERS = 2
+
+# genetic algorithm parameters
+POPULATION = 10000
+KEEP_BEST = POPULATION / 10
+BREED_BEST = POPULATION / 5
+PLATEAU = 10 # terminate after this many generations w/o improvement
 
 require_relative 'search'
 
@@ -51,19 +57,17 @@ state_map = {}
   Search::bfs(ValveSearchNode.new(node, valves, state_map[node] = {}))
 end
 
-# pp state_map
+#pp state_map
 
 def run_tour(state_map, tour)
   locations = ['AA'] * WORKERS
   times = [TIME_LIMIT] * WORKERS
   pressure_released = 0
-  tour = tour.dup
-  until tour.empty?
+  tour.each do |valve|
     turn = times.index(times.max)
-    valve = tour.shift
     location = locations[turn]
     time_cost, flow_rate = state_map[location][valve]
-    break if times[turn] < time_cost
+    break if times[turn] <= time_cost
 
     times[turn] -= time_cost
     locations[turn] = valve
@@ -96,22 +100,26 @@ def mutate(a)
   a
 end
 
-POPULATION = 10000
-KEEP_BEST = POPULATION / 10
-BREED_BEST = POPULATION / 5
 BREED_TIMES = (POPULATION - KEEP_BEST) / (BREED_BEST / 2)
 
 population = POPULATION.times.map { Solution.new(legit_nodes.shuffle, 0) }
 
 best_p = 0
+plateau = 0
 loop do
   population.each { _1.score = run_tour(state_map, _1.tour) }
   population.sort_by!(&:score)
 
   p = population.last.score
-  if p > best_p
+  if p < best_p
+    plateau = 0
+  elsif p > best_p
     puts p
     best_p = p
+    plateau = 0
+  else
+    plateau += 1
+    break if plateau == PLATEAU
   end
 
   next_gen = population[-KEEP_BEST..]
