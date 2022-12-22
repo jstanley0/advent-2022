@@ -1,3 +1,5 @@
+require_relative 'ranger'
+
 Coord = Struct.new(:x, :y)
 Sensor = Struct.new(:pos, :beacon, :radius)
 
@@ -24,21 +26,8 @@ data = File.readlines(ARGV[0]).map do |line|
 end
 
 def excluded_ranges(data, intercept_row)
-  ranges = data.map { |sensor| project(sensor, intercept_row) }.compact.sort_by(&:first)
-
-  merged = []
-  r0 = ranges.shift
-  while (r1 = ranges.shift)
-    if r0.last >= r1.first - 1
-      r0 = [r0.first, r1.first].min .. [r0.last, r1.last].max
-    else
-      merged << r0
-      r0 = r1
-    end
-  end
-  merged << r0
-
-  merged
+  ranges = data.map { |sensor| project(sensor, intercept_row) }.compact
+  Ranger.union(*ranges)
 end
 
 xr = excluded_ranges(data, intercept_row)
