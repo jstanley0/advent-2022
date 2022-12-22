@@ -162,6 +162,13 @@ class Skim
     n
   end
 
+  def rectangularize(default = nil)
+    max_w = data.map(&:size).max
+    n = Skim.new(max_w, height, default)
+    n.paste(0, 0, self)
+    n
+  end
+
   def insert_rows!(row_count, default = nil, pos: nil, width: self.width)
     new_rows = row_count.times.map { [default] * width }
     if pos
