@@ -212,6 +212,10 @@ class Skim
     data.all? { |row| row.all? { |v| yield v } }
   end
 
+  def count(v, &block)
+    data.sum { |row| row.count(v, &block) }
+  end
+
   def find_coords(value)
     data.each_with_index do |row, y|
       x = row.find_index(value)
