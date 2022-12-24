@@ -25,6 +25,11 @@ class Search
       hash == other.hash
     end
 
+    # in case there are attributes such as time that aren't part of the A* heuristic
+    def fuzzy_equal?(other)
+      eql?(other)
+    end
+
     # used by the underlying implementation; Search users don't need to touch this
     attr_accessor :cost_heuristic
   end
@@ -41,7 +46,7 @@ class Search
   # and returns [cost, [search_node, search_node...]]
   def self.a_star(start_node, end_node)
     search_impl(start_node,
-                ->(node) { node.eql?(end_node) },
+                ->(node) { node.fuzzy_equal?(end_node) },
                 ->(node, cost_so_far) { cost_so_far + node.est_cost(end_node) })
   end
 
