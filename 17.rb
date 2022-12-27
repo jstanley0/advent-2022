@@ -40,7 +40,7 @@ jets = ThingStreamer.new(ARGF.gets.chomp.chars.map{_1 == '<' ? -1 : 1})
 
 well = Skim.new(7, 10, '.')
 
-heights = 5000.times.map do
+heights = [0] + 5000.times.map do
   _, highest_rock = well.find_coords('#') || [0, well.height]
   if highest_rock < 10
     well.insert_rows!(10, '.', pos: 0)
@@ -69,7 +69,7 @@ heights = 5000.times.map do
   _, y = well.find_coords('#')
   well.height - y
 end
-puts heights[2021]
+puts heights[2022]
 
 # returns [offset, size] where input starts repeating
 def find_cycle(input)
@@ -110,6 +110,6 @@ offset, size = find_cycle(diffs)
 raise "no cycle detected" unless offset
 
 count_per_cycle = diffs[offset, size].sum
-cycles_to_elide, remainder = (1000000000000 - offset - 1).divmod size
+cycles_to_elide, remainder = (1000000000000 - offset).divmod size
 
 p heights[offset + remainder] + cycles_to_elide * count_per_cycle
